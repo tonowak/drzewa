@@ -1,32 +1,51 @@
 import requests, io
 from PIL import Image
 
-METERS_WIDTH = 500
+WIDTH_METERS = 500
 PNG_WIDTH = 2000
-def get_coord(grid_x, grid_y):
-    assert 0 <= grid_x and grid_x < 15000 // METERS_WIDTH
-    assert 0 <= grid_y and grid_y < 15000 // METERS_WIDTH
-    return 630000 + grid_x * METERS_WIDTH, 480000 + grid_y * METERS_WIDTH
+CIRCLE_RADIUS_METERS = 1.25
 
 def get_pipes_map(x, y):
-    print('get_pipes_map')
-    url = 'https://integracja01.gugik.gov.pl/cgi-bin/KrajowaIntegracjaUzbrojeniaTerenu_14?LAYERS=przewod_wodociagowy,przewod_kanalizacyjny,przewod_gazowy,przewod_elektroenergetyczny&REQUEST=GetMap&SERVICE=WMS&FORMAT=image/png&STYLES=,,,&HEIGHT=' + str(PNG_WIDTH) + '&VERSION=1.1.1&SRS=EPSG:2180&WIDTH=' + str(PNG_WIDTH) + '&BBOX=' + str(x) + ',' + str(y) + ',' + str(x + METERS_WIDTH) + ',' + str(y + METERS_WIDTH) + '&TRANSPARENT=TRUE&EXCEPTIONS=application/vnd.ogc.se_xml'
+    url = 'https://integracja01.gugik.gov.pl/cgi-bin/KrajowaIntegracjaUzbrojeniaTerenu_14' \
+        '?LAYERS=przewod_wodociagowy,przewod_kanalizacyjny,przewod_gazowy,przewod_elektroenergetyczny' \
+        '&REQUEST=GetMap' \
+        '&SERVICE=WMS' \
+        '&FORMAT=image/png' \
+        '&STYLES=,,,' \
+        '&HEIGHT=' + str(PNG_WIDTH) + \
+        '&VERSION=1.1.1' \
+        '&SRS=EPSG:2180' \
+        '&WIDTH=' + str(PNG_WIDTH) +  \
+        '&BBOX=' + str(x - WIDTH_METERS / 2) + ',' + str(y - WIDTH_METERS / 2) + ',' + str(x + WIDTH_METERS / 2) + ',' + str(y + WIDTH_METERS / 2) +  \
+        '&TRANSPARENT=TRUE' \
+        '&EXCEPTIONS=application/vnd.ogc.se_xml'
     print(url)
     r = requests.get(url)
     assert r.status_code == 200
     im = Image.open(io.BytesIO(r.content))
-    im.show()
+    assert im.size == (PNG_WIDTH, PNG_WIDTH)
     return im
 
-def get_image_colors(im):
-    ret = {}
-    for x in range(im.width):
-        for y in range(im.height):
-            rgba = im.getpixel((x, y))
-            if rgba not in ret:
-                ret[rgba] = 0
-            ret[rgba] += 1
-    return ret
+def get_development_plans(x, y):
+    url = 'https://mapy.geoportal.gov.pl/wss/ext/KrajowaIntegracjaMiejscowychPlanowZagospodarowaniaPrzestrzennego' \
+        '?VERSION=1.1.1' \
+        '&SERVICE=WMS' \
+        '&REQUEST=GetFeatureInfo' \
+        '&LAYERS=granice,raster,wektor-str,wektor-lzb,wektor-lin,wektor-pow,wektor-pkt' \
+        '&QUERY_LAYERS=granice,raster,wektor-str,wektor-lzb,wektor-lin,wektor-pow,wektor-pkt' \
+        '&SRS=EPSG:2180' \
+        '&WIDTH=1' \
+        '&HEIGHT=1' \
+        '&X=0' \
+        '&Y=0' \
+        '&TRANSPARENT=TRUE' \
+        '&FORMAT=image/png' \
+        '&BBOX=' + str(x) + ',' + str(y) + ',' + str(x + 1) + ',' + str(y + 1) + \
+        '&INFO_FORMAT=text/html'
+    print(url)
+    r = requests.get(url)
+    assert r.status_code == 200
+    return r.content
 
 def color_dist(a, b):
     ret = 0
@@ -39,29 +58,46 @@ def similar_color(a, b):
 
 def add_circles_for_color(original_im, new_im, color):
     print('adding circles of color', color)
-    RADIUS_PIXELS = int(round(1.25 * PNG_WIDTH / METERS_WIDTH))
-    for x in range(original_im.width):
-        for y in range(original_im.height):
-            if similar_color(original_im.getpixel((x, y)), color):
-                for dx in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
-                    for dy in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
-                        if dx ** 2 + dy ** 2 <= RADIUS_PIXELS ** 2 and 0 <= min(x + dx, y + dy) and max(x + dx, y + dy) < PNG_WIDTH:
-                            new_im.putpixel((x + dx, y + dy), color)
+PIPE_COLORS = {
+    (255, 0, 0, 255): 'red',
+    (255, 217, 0, 255): 'yellow',
+    (0, 0, 255, 255): 'blue',
+    (128, 51, 0, 255): 'brown',
+}
 
-def main():
-    print('Podaj x, y od 0 do', 15000 // METERS_WIDTH, '(wartości 10 9 dają MIM)')
-    x = int(input())
-    y = int(input())
-    x, y = get_coord(x, y)
-    print(x, y)
-    pipes_map = get_pipes_map(x, y)
-    # print(get_image_colors(pipes_map))
-    circles = Image.new(mode=pipes_map.mode, size=pipes_map.size)
-    add_circles_for_color(pipes_map, circles, (255, 0, 0, 255)) # red
-    add_circles_for_color(pipes_map, circles, (255, 217, 0, 255)) # yellow
-    add_circles_for_color(pipes_map, circles, (0, 0, 255, 255)) # blue
-    add_circles_for_color(pipes_map, circles, (128, 51, 0, 255)) # brown
-    circles.show()
+def query(polish_x, polish_y):
+    pipes_map = get_pipes_map(polish_x, polish_y)
+    development_plans = get_development_plans(polish_x, polish_y)
+
+    RADIUS_PIXELS = int(round(CIRCLE_RADIUS_METERS * PNG_WIDTH / WIDTH_METERS))
+    nearest_of_queried_xy = {}
+    bolded_map = Image.new(mode=pipes_map.mode, size=pipes_map.size)
+    for x in range(PNG_WIDTH):
+        for y in range(PNG_WIDTH):
+            color_at_xy = pipes_map.getpixel((x, y))
+            for color in PIPE_COLORS:
+                if similar_color(color, color_at_xy):
+                    for dx in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
+                        for dy in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
+                            if 0 <= min(x + dx, y + dy) and max(x + dx, y + dy) < PNG_WIDTH:
+                                if x + dx == PNG_WIDTH // 2 and y + dy == PNG_WIDTH // 2:
+                                    if color not in nearest_of_queried_xy:
+                                        nearest_of_queried_xy[color] = WIDTH_METERS
+                                    nearest_of_queried_xy[color] = min(nearest_of_queried_xy[color], \
+                                            math.sqrt(dx ** 2 + dy ** 2) * WIDTH_METERS / PNG_WIDTH)
+                                if dx ** 2 + dy ** 2 <= RADIUS_PIXELS ** 2:
+                                    bolded_map.putpixel((x + dx, y + dy), color)
+
+    description = 'Rury lub kable w pobliżu:\n' + \
+        ('\n'.join(['odległość ' + str(nearest_of_queried_xy[color]) + ' metrów, typ: ' + PIPE_COLORS[color] \
+            for color in nearest_of_queried_xy]) if nearest_of_queried_xy else 'brak w pobliżu ' + str(CIRCLE_RADIUS_METERS) + ' metrów') \
+        + '\n\nPlany zagospodarowania miejskiego:\n' + str(development_plans)
+
+    return (bolded_map, description)
+
+MIM_COORD = (635377.186303, 484711.775204)
 
 if __name__ == '__main__':
-    main()
+    bolded_map, description = query(MIM_COORD[0], MIM_COORD[1])
+    bolded_map.show()
+    print(description)
