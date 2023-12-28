@@ -1,6 +1,6 @@
 # from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from django.core.serializers.json import DjangoJSONEncoder
+from . import logic
 
 
 # Create your views here.
@@ -11,12 +11,7 @@ def index(request):
 def location(request, loc_x, loc_y):
     floc_x = float(loc_x)
     floc_y = float(loc_y)
+    bolded_map, description = logic.query(floc_x, floc_y)
+    print(description)
 
-    class Result(DjangoJSONEncoder):
-        x = 0.0
-        y = 0.0
-
-    res = Result()
-    res.x = floc_x
-    res.y = floc_y
-    return JsonResponse({"x": res.x, "y": res.y})
+    return JsonResponse({"description": description})
