@@ -1,5 +1,7 @@
 # from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render
+from django.views.generic import TemplateView
 from . import logic
 
 
@@ -15,3 +17,7 @@ def location(request, loc_x, loc_y):
     print(description)
 
     return JsonResponse({"description": description})
+
+
+class HomePageView(TemplateView):
+    template_name = "index.html"
