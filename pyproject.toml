@@ -11,9 +11,28 @@ Django = "^4.2"
 Pillow = "^10.1.0"
 requests = "^2.31.0"
 
+[tool.poetry.group.dev.dependencies]
+pyright = "^1.1.343"
+django-stubs = "^4.2.7"
+types-pillow = "^10.1.0.2"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 manage = "manage:main"
+
+[tool.pyright]
+include = ["drzewa", "query"]
+exclude = ["**/node_modules",
+    "**/__pycache__",
+]
+
+stubPath = "stubs"
+
+reportMissingImports = true
+reportMissingTypeStubs = false
+
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
