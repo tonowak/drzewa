@@ -16,14 +16,18 @@ function onMapClick(e) {
     let x = projectedCoordinates[0];
     let y = projectedCoordinates[1];
 
+    let text = `x: ${x}, y: ${y}`;
+    let loadingText = text + '<br>Loading...';
+    popup
+        .setLatLng(e.latlng)
+        .setContent(loadingText)
+        .openOn(map);
+
     fetch(`/query/${x}/${y}`)
         .then(response => response.json())
         .then(data => {
-            // Display the response in a popup
-            popup
-                .setLatLng(e.latlng)
-                .setContent(data['description'])
-                .openOn(map);
+            popup.setContent(text + '<br>' + data['description']);
+
         });
 }
 
