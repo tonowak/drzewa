@@ -1,4 +1,6 @@
-import requests, io
+import requests
+import io
+import math
 from PIL import Image
 
 WIDTH_METERS = 500

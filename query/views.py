@@ -5,7 +5,7 @@ from . import logic
 
 # Create your views here.
 def index(request):
-    return HttpResponse("Hello, world!")
+    return HttpResponse(b"Hello, world!")
 
 
 def location(request, loc_x, loc_y):
