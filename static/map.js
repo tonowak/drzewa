@@ -11,13 +11,16 @@ const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 const popup = L.popup();
 
+
 function onMapClick(e) {
+
     let projectedCoordinates = proj4(polishCoordinates, [e.latlng.lng, e.latlng.lat]);
     let x = projectedCoordinates[0];
     let y = projectedCoordinates[1];
 
     let text = `x: ${x}, y: ${y}`;
     let loadingText = text + '<br>Loading...';
+    let pipe_image = document.getElementById("pipe_image");
     popup
         .setLatLng(e.latlng)
         .setContent(loadingText)
@@ -27,8 +30,10 @@ function onMapClick(e) {
         .then(response => response.json())
         .then(data => {
             popup.setContent(text + '<br>' + data['description']);
-
+            pipe_image.src = data['image_src'];
+            pipe_image.style.width = '100%'
         });
+    
 }
 
 map.on('click', onMapClick);
