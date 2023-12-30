@@ -11,9 +11,7 @@ const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 const popup = L.popup();
 
-
 function onMapClick(e) {
-
     let projectedCoordinates = proj4(polishCoordinates, [e.latlng.lng, e.latlng.lat]);
     let x = projectedCoordinates[0];
     let y = projectedCoordinates[1];
