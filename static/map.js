@@ -18,20 +18,19 @@ function onMapClick(e) {
 
     let text = `x: ${x}, y: ${y}`;
     let loadingText = text + '<br>Loading...';
-    let pipe_image = document.getElementById("pipe_image");
     popup
         .setLatLng(e.latlng)
         .setContent(loadingText)
         .openOn(map);
 
-    fetch(`/query/${x}/${y}`)
+    fetch(`/query/desc/${x}/${y}`)
         .then(response => response.json())
         .then(data => {
             popup.setContent(text + '<br>' + data['description']);
-            pipe_image.src = data['image_src'];
-            pipe_image.style.width = '100%'
         });
     
+    let pipe_image = document.getElementById("pipe_image");
+	pipe_image.src = `/query/image/${x}/${y}`;
 }
 
 map.on('click', onMapClick);

@@ -67,12 +67,9 @@ PIPE_COLORS = {
     (128, 51, 0, 255): 'brown',
 }
 
-def query(polish_x, polish_y):
+def query_image(polish_x, polish_y):
     pipes_map = get_pipes_map(polish_x, polish_y)
-    development_plans = get_development_plans(polish_x, polish_y)
-
     RADIUS_PIXELS = int(round(CIRCLE_RADIUS_METERS * PNG_WIDTH / WIDTH_METERS))
-    nearest_of_queried_xy = {}
     bolded_map = Image.new(mode=pipes_map.mode, size=pipes_map.size)
     for x in range(PNG_WIDTH):
         for y in range(PNG_WIDTH):
@@ -82,20 +79,29 @@ def query(polish_x, polish_y):
                     for dx in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
                         for dy in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
                             if 0 <= min(x + dx, y + dy) and max(x + dx, y + dy) < PNG_WIDTH:
-                                if x + dx == PNG_WIDTH // 2 and y + dy == PNG_WIDTH // 2:
-                                    if color not in nearest_of_queried_xy:
-                                        nearest_of_queried_xy[color] = WIDTH_METERS
-                                    nearest_of_queried_xy[color] = min(nearest_of_queried_xy[color], \
-                                            math.sqrt(dx ** 2 + dy ** 2) * WIDTH_METERS / PNG_WIDTH)
                                 if dx ** 2 + dy ** 2 <= RADIUS_PIXELS ** 2:
                                     bolded_map.putpixel((x + dx, y + dy), color)
+    return bolded_map
 
-    description = 'Rury lub kable w pobliżu:\n' + \
-        ('\n'.join(['odległość ' + str(nearest_of_queried_xy[color]) + ' metrów, typ: ' + PIPE_COLORS[color] \
+def query_desc(polish_x, polish_y):
+    pipes_map = get_pipes_map(polish_x, polish_y)
+    nearest_of_queried_xy = {}
+    for color in PIPE_COLORS:
+        if similar_color(color, pipes_map.getpixel((PNG_WIDTH // 2, PNG_WIDTH // 2))):
+            for dx in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
+                for dy in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
+                    if color not in nearest_of_queried_xy:
+                        nearest_of_queried_xy[color] = WIDTH_METERS
+                    nearest_of_queried_xy[color] = min(nearest_of_queried_xy[color], \
+                            math.sqrt(dx ** 2 + dy ** 2) * WIDTH_METERS / PNG_WIDTH)
+
+    development_plans = get_development_plans(polish_x, polish_y)
+
+    description = '<p>Rury lub kable w pobliżu:</p><p>' + \
+        ('<br>'.join(['odległość ' + str(nearest_of_queried_xy[color]) + ' metrów, typ: ' + PIPE_COLORS[color] \
             for color in nearest_of_queried_xy]) if nearest_of_queried_xy else 'brak w pobliżu ' + str(CIRCLE_RADIUS_METERS) + ' metrów') \
-        + '\n\nPlany zagospodarowania miejskiego:\n' + str(development_plans)
-
-    return (bolded_map, description)
+        + '</p><p>Plany zagospodarowania miejskiego:</p><p>' + str(development_plans) + '</p>'
+    return description
 
 MIM_COORD = (635377.186303, 484711.775204)
 
