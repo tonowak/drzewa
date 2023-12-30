@@ -23,12 +23,14 @@ function onMapClick(e) {
         .setContent(loadingText)
         .openOn(map);
 
-    fetch(`/query/${x}/${y}`)
+    fetch(`/query/desc/${x}/${y}`)
         .then(response => response.json())
         .then(data => {
             popup.setContent(text + '<br>' + data['description']);
-
         });
+    
+    let pipe_image = document.getElementById("pipe_image");
+	pipe_image.src = `/query/image/${x}/${y}`;
 }
 
 map.on('click', onMapClick);

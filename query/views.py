@@ -1,23 +1,25 @@
 # from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.conf import settings
 from django.views.generic import TemplateView
 from . import logic
+import io
 
 
-# Create your views here.
-def index(request):
-    return HttpResponse(b"Hello, world!")
-
-
-def location(request, loc_x, loc_y):
+def desc(_, loc_x, loc_y):
     floc_x = float(loc_x)
     floc_y = float(loc_y)
-    bolded_map, description = logic.query(floc_x, floc_y)
-    print(description)
+    # TODO: handle exceptions from `logic`
+    description = logic.query_desc(floc_x, floc_y)
+    return JsonResponse({
+        "description": description,
+    })
 
-    return JsonResponse({"description": description})
-
-
-class HomePageView(TemplateView):
-    template_name = "index.html"
+def image(_, loc_x, loc_y):
+    floc_x = float(loc_x)
+    floc_y = float(loc_y)
+    # TODO: handle exceptions from `logic`
+    bolded_map = logic.query_image(floc_x, floc_y)
+    image = io.BytesIO()
+    bolded_map.save(image, format='png')
+    return HttpResponse(image.getvalue(), content_type="image/png")
