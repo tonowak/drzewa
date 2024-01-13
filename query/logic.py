@@ -4,8 +4,9 @@ import math
 from PIL import Image
 
 WIDTH_METERS = 500
-PNG_WIDTH = 2000
+PNG_WIDTH = 500
 CIRCLE_RADIUS_METERS = 1.25
+RADIUS_PIXELS = int(round(CIRCLE_RADIUS_METERS * PNG_WIDTH / WIDTH_METERS))
 
 def get_pipes_map(x, y):
     url = 'https://integracja01.gugik.gov.pl/cgi-bin/KrajowaIntegracjaUzbrojeniaTerenu_14' \
@@ -61,15 +62,15 @@ def similar_color(a, b):
 def add_circles_for_color(original_im, new_im, color):
     print('adding circles of color', color)
 PIPE_COLORS = {
-    (255, 0, 0, 255): 'red',
-    (255, 217, 0, 255): 'yellow',
-    (0, 0, 255, 255): 'blue',
-    (128, 51, 0, 255): 'brown',
+    (255, 0, 0, 255): 'sieć elektroenergetyczna',
+    (255, 217, 0, 255): 'sieć gazowa',
+    (0, 0, 255, 255): 'sieć wodociągowa',
+    (128, 51, 0, 255): 'sieć kanalizacyjna',
+    # TODO: add sieć ciepłownicza, telekomunikacyjna, specjalna, niezidentyfikowana
 }
 
 def query_image(polish_x, polish_y):
     pipes_map = get_pipes_map(polish_x, polish_y)
-    RADIUS_PIXELS = int(round(CIRCLE_RADIUS_METERS * PNG_WIDTH / WIDTH_METERS))
     bolded_map = Image.new(mode=pipes_map.mode, size=pipes_map.size)
     for x in range(PNG_WIDTH):
         for y in range(PNG_WIDTH):
@@ -87,9 +88,9 @@ def query_desc(polish_x, polish_y):
     pipes_map = get_pipes_map(polish_x, polish_y)
     nearest_of_queried_xy = {}
     for color in PIPE_COLORS:
-        if similar_color(color, pipes_map.getpixel((PNG_WIDTH // 2, PNG_WIDTH // 2))):
-            for dx in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
-                for dy in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
+        for dx in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
+            for dy in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
+                if similar_color(color, pipes_map.getpixel((PNG_WIDTH // 2 + dx, PNG_WIDTH // 2 + dy))):
                     if color not in nearest_of_queried_xy:
                         nearest_of_queried_xy[color] = WIDTH_METERS
                     nearest_of_queried_xy[color] = min(nearest_of_queried_xy[color], \
