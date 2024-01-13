@@ -2,9 +2,12 @@
 from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 from django.views.generic import TemplateView
+from django.shortcuts import render
 from . import logic
 import io
 
+def main(request):
+    return render(request, 'drzewa/index.html')
 
 def desc(_, loc_x, loc_y):
     floc_x = float(loc_x)

@@ -20,5 +20,5 @@ Including another URLconf
 from django.urls import include, path
 
 urlpatterns = [
-    path('query/', include("query.urls")),
+    path('query/', include("drzewa_query.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
