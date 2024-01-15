@@ -136,6 +136,8 @@ def query_image(polish_x, polish_y):
     for x in range(PNG_WIDTH):
         for y in range(PNG_WIDTH):
             color_at_xy = pipes_map.getpixel((x, y))
+            if type(color_at_xy) == int:
+                continue # TODO: handle it better
             for color in PIPE_COLORS:
                 if similar_color(color, color_at_xy):
                     for dx in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
@@ -152,7 +154,10 @@ def query_desc(polish_x, polish_y):
     for color in PIPE_COLORS:
         for dx in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
             for dy in range(-RADIUS_PIXELS, RADIUS_PIXELS + 1):
-                if similar_color(color, pipes_map.getpixel((PNG_WIDTH // 2 + dx, PNG_WIDTH // 2 + dy))):
+                color_at_xy = pipes_map.getpixel((PNG_WIDTH // 2 + dx, PNG_WIDTH // 2 + dy))
+                if type(color_at_xy) == int:
+                    continue # TODO: handle it better
+                if similar_color(color, color_at_xy):
                     if color not in nearest_of_queried_xy:
                         nearest_of_queried_xy[color] = WIDTH_METERS
                     nearest_of_queried_xy[color] = min(nearest_of_queried_xy[color],
